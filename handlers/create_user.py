@@ -44,7 +44,7 @@ async def ChoosingRole(message: Message, state: FSMContext) -> None:
 async def ChoosingRole(message: Message, state: FSMContext) -> None:
     await state.update_data(ChoosingRole=message.text)
     user_data = await state.get_data()
-    await message.answer(f"Подтвердите указанные данные: {user_data["ChoosingId"]}, {user_data["ChoosingName"]}, {user_data["ChoosingRole"]}")
+    await message.answer(f"Подтвердите указанные данные: {user_data['ChoosingId']}, {user_data['ChoosingName']}, {user_data['ChoosingRole']}")
     await state.set_state(CreateUser.Confirm)
 
 
