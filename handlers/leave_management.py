@@ -3,8 +3,7 @@ import logging
 from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
-from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton
-from aiogram.types import InlineKeyboardMarkup, CallbackQuery
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery, Message
 
 from config import bd_conn
 
@@ -20,18 +19,18 @@ class LeaveManagement(StatesGroup):
 
 # Функция
 def get_main_keyboard():
-    return ReplyKeyboardMarkup(
+    return InlineKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="Назначить отпуск")],
-            [KeyboardButton(text="Отменить отпуск")],
-            [KeyboardButton(text="Вернуться")]
+            [InlineKeyboardButton(text="Назначить отпуск")],
+            [InlineKeyboardButton(text="Отменить отпуск")],
+            [InlineKeyboardButton(text="Вернуться")]
         ],
         resize_keyboard=True
     )
 
 def get_cancel_keyboard():
-    return ReplyKeyboardMarkup(
-        keyboard=[[KeyboardButton(text="Вернуться")]],
+    return InlineKeyboardMarkup(
+        keyboard=[[InlineKeyboardButton(text="Вернуться")]],
         resize_keyboard=True
     )
 
