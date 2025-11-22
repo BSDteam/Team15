@@ -13,10 +13,15 @@ router = Router()
 async def menu(message: types.Message):
     cur = bd_conn.cursor()
     tag = "@"+message.from_user.username
-    cur.execute("SELECT * from users WHERE users.telegram_tag = %s LIMIT 1", (tag,))
+    cur.execute("SELECT users.id, users.full_name, users.role from users WHERE users.telegram_tag = %s LIMIT 1", (tag,))
     ans = cur.fetchone()
+    id = ans[0]
     name = ans[1]
     role = ans[2]
+    if id==0:
+        cur.execute("UPDATE users SET id = %s WHERE users.telegram_tag = %s", (message.from_user.id, tag,))
+        cur.close()
+        bd_conn.commit()
     if role == "hr": # employee supervisor
         role = "Кадровый отдел"
     elif role == "employee":
@@ -79,11 +84,11 @@ async def handle_main_history_shifts(callback: CallbackQuery):
     part3 = ""
 
     if role == "supervisor":
-        part2 = "\nВы начальник а сменах:"
+        part2 = "\nВы начальник в сменах:"
         cur.execute("SELECT shifts.id, shifts.workshop, shifts.shift_date, shifts.shift_time from shifts WHERE shifts.tag = %s", (tag,))
         ans = cur.fetchall()
         for x in ans:
-            part2 += f"\nСмена №{ans[0]}, цех {x[1]},начало {x[2]} в {x[3]}:"
+            part2 += f"\nСмена №{ans[0][0]}, цех {x[1]},начало {x[2]} в {x[3]}:"
 
     part3 = "\n\nВы работник в сменах"
     cur.execute("SELECT s.shift_id, shifts.workshop, shifts.shift_date, shifts.shift_time, users.full_name, users.telegram_tag\
