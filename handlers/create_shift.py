@@ -1,10 +1,9 @@
 import logging
 
-from aiogram.dispatcher import router
 from aiogram.filters import StateFilter, Command
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.fsm.context import FSMContext
-from aiogram.types import ReplyKeyboardMarkup, Message, KeyboardButton
+from aiogram.types import ReplyKeyboardMarkup, Message, KeyboardButton, CallbackQuery
 from aiogram import F, Router
 from config import bd_conn
 from datetime import datetime, timedelta
@@ -21,7 +20,7 @@ router = Router()
 confirm = ['Да', 'да']
 
 
-@router.message(StateFilter(None), Command("create_shift"))
+
 async def cmdCreateShift(message: Message, state: FSMContext) -> None:
     cur = bd_conn.cursor()
     SQL = 'SELECT extra_field FROM workshops'
@@ -34,6 +33,13 @@ async def cmdCreateShift(message: Message, state: FSMContext) -> None:
     await message.answer(f"Доступные цеха:{text}, выберите доступный")
     await state.set_state(CreateUser.ChoosingWorkshop)
 
+@router.message(StateFilter(None), Command("create_shift"))
+async def cmdCreateShift1(message: Message, state: FSMContext) -> None:
+    await cmdCreateShift(message, state)
+
+@router.callback_query(StateFilter(None), F.data == "main_new_shift")
+async def cmdCreateShift2(callback: CallbackQuery, state: FSMContext) -> None:
+    await cmdCreateShift(callback.message, state)
 
 @router.message(CreateUser.ChoosingWorkshop)
 async def ChoosingWorkshop(message: Message, state: FSMContext) -> None:
