@@ -80,16 +80,18 @@ async def handle_main_history_shifts(callback: CallbackQuery):
 
     if role == "supervisor":
         part2 = "\nВы начальник а сменах:"
-        cur.execute("SELECT * from shifts WHERE shifts.supervisor_telegram_tag = %s", (tag,))
+        cur.execute("SELECT shifts.id, shifts.workshop, shifts.shift_date, shifts.shift_time from shifts WHERE shifts.tag = %s", (tag,))
         ans = cur.fetchall()
         for x in ans:
-            part2 += f"\nСмена №{ans[0]}, цех {x[3]},начало в {x[1]}:"
+            part2 += f"\nСмена №{ans[0]}, цех {x[1]},начало {x[2]} в {x[3]}:"
 
     part3 = "\n\nВы работник в сменах"
-    cur.execute("SELECT shifts.id, shifts.started_at, shifts.workshop from shift_assignments s JOIN shifts ON shifts.id = s.shift_id WHERE s.user_telegram_tag = %s", (tag,))
+    cur.execute("SELECT s.shift_id, shifts.workshop, shifts.shift_date, shifts.shift_time, users.full_name, users.telegram_tag\
+                 from shift_assignments s JOIN shifts ON shifts.id = \
+            s.shift_id JOIN users ON users.telegram_tag = shifts.tag WHERE s.user_telegram_tag = %s", (tag,))
     ans = cur.fetchall()
     for x in ans:
-        part3 += f"\nСмена №{x[0]}, Цех #{x[2]}, Начало в {x[1]}:"
+        part3 += f"\nСмена №{ans[0][0]}, цех {x[1]},начало в {x[2]} в {x[3]}, начальник {x[4]} ({x[5]}):"
 
     total = part1 + part2 + part3
     if role == "supervisor":
