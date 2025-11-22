@@ -11,8 +11,9 @@ MainMenuManager = [
     [InlineKeyboardButton(text="Обновить Информацию", callback_data='main_refresh')],
     [InlineKeyboardButton(text="Зарегистрировать новую смену", callback_data='main_new_shift')],
     [InlineKeyboardButton(text="Просмотр смен", callback_data='main_history_shifts')],
-    [InlineKeyboardButton(text="Назначить отпуск", callback_data='main_create_vacation')],
-    [InlineKeyboardButton(text="Отменить отпуск", callback_data='main_cancel_vacation')],
+    [InlineKeyboardButton(text="Меню отпусков", callback_data='main_view_vacation')],
+    [InlineKeyboardButton(text="Просмотр статуса сотрудников", callback_data='search_employees')],
+    [InlineKeyboardButton(text="Журнал инцидентов", callback_data='open_incident_log')],
     [InlineKeyboardButton(text="Сообщить об инциденте", callback_data='main_create_report')],
 ]
 
@@ -61,14 +62,12 @@ shift_details = [
 # 5 нечего писать
 #6 Просмотр истории отпусков
 vacations_list = [
-    [InlineKeyboardButton(text="Назначить отпуск", callback_data='create_vacantion')],
-    [InlineKeyboardButton(text="Отменить отпуск", callback_data='cancel_vacantion')],
-    [InlineKeyboardButton(text="Вернуться", callback_data='main_refresh')],
+    [InlineKeyboardButton(text="Назначить отпуск", callback_data="action:create_leave")],
+    [InlineKeyboardButton(text="Отменить отпуск", callback_data="action:cancel_leave")],
+    [InlineKeyboardButton(text="Вернуться", callback_data="action:back")]
 ]
 # 7 8 нечего делать
-vacations_list_go_back = [
-    [InlineKeyboardButton(text="Вернуться")],
-]
+
 
 # Панельки отдела кадров
 admin_main = [

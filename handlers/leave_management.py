@@ -6,7 +6,7 @@ from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery, Message
 
 from config import bd_conn
-from inline_kbds import vacations_list, vacations_list_go_back
+from inline_kbds import vacations_list
 
 router = Router()
 
@@ -20,17 +20,15 @@ class LeaveManagement(StatesGroup):
 # Функция
 def get_main_keyboard():
     return InlineKeyboardMarkup(
-        keyboard=vacations_list,
-        resize_keyboard=True
+        inline_keyboard=vacations_list
     )
 
 def get_cancel_keyboard():
     return InlineKeyboardMarkup(
-        keyboard=vacations_list_go_back,
-        resize_keyboard=True
+        inline_keyboard=[vacations_list[-1]]
     )
 
-@router.callback_query(F.data == "main_create_vacation")
+@router.callback_query(F.data == "main_view_vacation")
 async def start_leave_management_from_menu(callback: CallbackQuery, state: FSMContext):
     # Проверяем, что пользователь — начальник
     cur = bd_conn.cursor()
@@ -87,14 +85,15 @@ async def show_leaves(message: Message, state: FSMContext):
     finally:
         cur.close()
 
-@router.message(LeaveManagement.ViewingLeaves, F.text == "Назначить отпуск")
-async def start_create_leave(message: Message, state: FSMContext):
-    await message.answer(
+@router.callback_query(LeaveManagement.ViewingLeaves, F.data == "action:create_leave")
+async def start_create_leave(callback: CallbackQuery, state: FSMContext):
+    await callback.answer()
+    await callback.message.answer(
         "📅 Введите период отпуска в формате:\n"
         "`дд.мм.гггг - дд.мм.гггг`\n"
         "Пример: `22.11.2025 - 30.11.2025`\n\n"
-        "Чтобы отменить — введите слово **отмена**.",
-        reply_markup=get_cancel_keyboard()
+        "Чтобы отменить — введите слово **отмена**."
+        # ❗ НЕТ reply_markup=get_cancel_keyboard() здесь, если используешь инлайн — не нужна клавиатура внизу
     )
     await state.set_state(LeaveManagement.CreatingLeave)
 
@@ -150,6 +149,12 @@ async def create_leave(message: Message, state: FSMContext):
 
 @router.message(LeaveManagement.ViewingLeaves, F.text == "Отменить отпуск")
 async def start_cancel_leave(message: Message, state: FSMContext):
+    """
+    ToDo: Поменять обёртку и логику!
+    :param message:
+    :param state:
+    :return:
+    """
     await message.answer("Введите ID отпуска для отмены (например, 2):")
     await state.set_state(LeaveManagement.CancelingLeave)
 
