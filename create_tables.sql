@@ -16,8 +16,9 @@ CREATE TABLE users (
 -- 3. Смены
 CREATE TABLE shifts (
     id SERIAL PRIMARY KEY,
-    date DATE NOT NULL,
-    supervisor_telegram_tag TEXT REFERENCES users(telegram_tag) ON DELETE SET NULL
+    started_at TIMESTAMPTZ NOT NULL,         -- дата и время начала смены
+    supervisor_telegram_tag TEXT REFERENCES users(telegram_tag) ON DELETE SET NULL,
+    workshop INTEGER NOT NULL                 -- номер площадки (цеха)
 );
 
 -- 4. Назначения (многие-ко-многим)
@@ -62,9 +63,10 @@ INSERT INTO events (description, reporter_telegram_tag, created_at) VALUES
 ('Утечка масла в пресс-цеху', '@sstasbaldanov', '2025-11-22 10:30:00+07'),
 ('Неисправность датчика температуры', '@sstasbaldanov', '2025-11-22 12:45:00+07');
 
-INSERT INTO shifts (date, supervisor_telegram_tag)
-VALUES ('2025-11-22', '@smtg_wrong');
+INSERT INTO shifts (started_at, supervisor_telegram_tag, workshop)
+VALUES ('2025-11-22 06:00:00+07', '@smtg_wrong', 1);
 
-INSERT INTO shift_assignments (user_telegram_tag, shift_id) VALUES
+INSERT INTO shift_assignments (user_telegram_tag, shift_id)
+VALUES
 ('@sstasbaldanov', 1),
 ('@test', 1);
