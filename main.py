@@ -10,12 +10,13 @@ from aiogram.filters import CommandStart
 from aiogram.types import Message
 
 from config import BOT_TOKEN
-from handlers import create_user, main_menu
+from handlers import create_user, main_menu, leave_management
 
 async def main():
     dp = Dispatcher()
     bot = Bot(token=BOT_TOKEN)
     dp.include_router(create_user.router)
+    dp.include_router(leave_management.router)
     dp.include_router(main_menu.router)
 
     await dp.start_polling(bot)
