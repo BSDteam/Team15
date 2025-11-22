@@ -66,9 +66,6 @@ vacations_list = [
     [InlineKeyboardButton(text="Вернуться", callback_data='main_refresh')],
 ]
 # 7 8 нечего делать
-vacations_list_go_back = [
-    [InlineKeyboardButton(text="Вернуться")],
-]
 
 # Панельки отдела кадров
 admin_main = [
