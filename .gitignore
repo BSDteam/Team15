@@ -104,6 +104,7 @@ settings.ini
 # Databases (если используете SQLite локально)
 *.db
 *.sqlite3
+*.sql
 
 # OS
 .DS_Store

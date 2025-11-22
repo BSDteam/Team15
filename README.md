@@ -4,11 +4,11 @@ sample
 
 1. Создайте файл `.env` в корне проекта:
    ```env
-   DB_HOST=localhost
-   DB_PORT=5432
-   DB_NAME=rus_al_shifts
+   BOT_TOKEN = токен бота
+   DB_HOST="EtherealDream-MateBook.local"
    DB_USER=postgres
-   DB_PASS=ваш_пароль
+   DB_PASS=наш пароль :)
+   DB_NAME=rus_al_shifts
 
 Как запустить проект?
 
