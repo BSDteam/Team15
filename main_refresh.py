@@ -4,6 +4,7 @@ import psycopg2
 from datetime import datetime
 
 router = Router()
+# Не понадобится
 
 
 def get_supervisor_main_keyboard():

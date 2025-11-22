@@ -5,6 +5,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import ReplyKeyboardMarkup, Message, KeyboardButton
 from aiogram import F, Router
 from config import bd_conn
+# Не понадобится
 
 
 

@@ -1,65 +1,94 @@
-import logging
+# handlers/create_user.py
+"""
+Хендлер создания пользователя.
+Доступен только HR через кнопку "Добавить учетную запись".
+Использует FSM для пошагового ввода.
+"""
 
-from aiogram.dispatcher import router
-from aiogram.filters import StateFilter, Command
-from aiogram.fsm.state import StatesGroup, State
+from aiogram import Router, F, types
 from aiogram.fsm.context import FSMContext
-from aiogram.types import ReplyKeyboardMarkup, Message, KeyboardButton
-from aiogram import F, Router
-from config import bd_conn
-
-
-
-class CreateUser(StatesGroup):
-    ChoosingName = State()
-    ChoosingId = State()
-    ChoosingRole = State()
-    Confirm = State()
-
+from aiogram.filters import StateFilter
+from services.user_service import is_hr, create_user_in_db
+from states import CreateUser
+from keyboards import confirm_kb, back_to_main_kb
+from callbacks import AdminCallback
 
 router = Router()
-confirm = ['Да', 'да']
 
-@router.message(StateFilter(None), Command("create_user"))
-async def cmd_create_user(message: Message, state: FSMContext) -> None:
-    await message.answer(text="Введите ФИО нового пользователя")
-    await state.set_state(CreateUser.ChoosingName)
+# --- Запуск процесса ---
+@router.callback_query(F.data == AdminCallback.ADD_USER)
+async def cmd_create_user(callback: types.CallbackQuery, state: FSMContext):
+    """
+    Начинает процесс создания пользователя.
+    Доступен только HR (проверка через сервис).
+    """
+    telegram_tag = f"@{callback.from_user.username}" if callback.from_user.username else None
+    if not telegram_tag or not is_hr(telegram_tag):
+        await callback.answer("❌ Только HR может добавлять пользователей.", show_alert=True)
+        return
 
+    await callback.message.answer("Введите ФИО нового пользователя:")
+    await state.set_state(CreateUser.choosing_name)
+    await callback.answer()
 
-@router.message(CreateUser.ChoosingName)
-async def ChoosingId(message: Message, state: FSMContext) -> None:
-    await state.update_data(ChoosingName=message.text)
-    await message.answer("Введите никнейм пользователя (@sample)")
-    await state.set_state(CreateUser.ChoosingId)
+# --- Ввод ФИО ---
+@router.message(CreateUser.choosing_name)
+async def process_name(message: types.Message, state: FSMContext):
+    await state.update_data(full_name=message.text.strip())
+    await message.answer("Введите Telegram-тег (например, @ivan):")
+    await state.set_state(CreateUser.choosing_tag)
 
+# --- Ввод тега ---
+@router.message(CreateUser.choosing_tag)
+async def process_tag(message: types.Message, state: FSMContext):
+    tag = message.text.strip()
+    if not tag.startswith('@'):
+        await message.answer("Тег должен начинаться с @. Попробуйте снова:")
+        return
+    await state.update_data(telegram_tag=tag)
 
-@router.message(CreateUser.ChoosingId)
-async def ChoosingRole(message: Message, state: FSMContext) -> None:
-    await state.update_data(ChoosingId=message.text)
-    await message.answer("Выберите роль пользователя")
-    await state.set_state(CreateUser.ChoosingRole)
+    # Устанавливаем состояние
+    await state.set_state(CreateUser.choosing_role)
 
+    await message.answer(
+        "Выберите роль:\n• employee — Сотрудник\n• supervisor — Начальник\n• hr — Кадровик"
+    )
 
-@router.message(CreateUser.ChoosingRole)
-async def ChoosingRole(message: Message, state: FSMContext) -> None:
-    await state.update_data(ChoosingRole=message.text)
-    user_data = await state.get_data()
-    await message.answer(f"Подтвердите указанные данные: {user_data['ChoosingId']}, {user_data['ChoosingName']}, {user_data['ChoosingRole']}")
-    await state.set_state(CreateUser.Confirm)
+# --- Ввод роли ---
+@router.message(CreateUser.choosing_role)
+async def process_role(message: types.Message, state: FSMContext):
+    role = message.text.strip().lower()
+    if role not in {"employee", "supervisor", "hr"}:
+        await message.answer("Неверная роль. Выберите: employee, supervisor или hr")
+        return
+    await state.update_data(role=role)
+    data = await state.get_data()
+    await message.answer(
+        f"Подтвердите данные:\nФИО: {data['full_name']}\nТег: {data['telegram_tag']}\nРоль: {role}",
+        reply_markup=confirm_kb()
+    )
+    await state.set_state(CreateUser.confirm)
 
-
-@router.message(CreateUser.Confirm)
-async def cmd_confirm(message: Message, state: FSMContext) -> None:
-    cur = bd_conn.cursor()
-    user_data = await state.get_data()
-    if message.text.lower() == 'да':
-        print(user_data)
-        text = f'INSERT INTO Users (telegram_tag, full_name, role, status) VALUES (%s, %s, %s, %s)'
-        cur.execute(text, (user_data["ChoosingId"], user_data["ChoosingName"], user_data["ChoosingRole"], 'available'))
-        logging.info('Created '+text)
-        bd_conn.commit()
-        logging.info('Commit created')
-        await message.answer("Пользователь добавлен")
+# --- Подтверждение ---
+@router.callback_query(CreateUser.confirm, F.data == "confirm_yes")
+async def confirm_yes(callback: types.CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    success = create_user_in_db(
+        telegram_tag=data["telegram_tag"],
+        full_name=data["full_name"],
+        role=data["role"]
+    )
+    if success:
+        text = "✅ Пользователь успешно добавлен!"
     else:
-        await state.clear()
-        await message.answer("Отменено")
+        text = "❌ Пользователь с таким тегом уже существует."
+
+    await callback.message.edit_text(text, reply_markup=back_to_main_kb())
+    await state.clear()
+    await callback.answer()
+
+@router.callback_query(CreateUser.confirm, F.data == "confirm_no")
+async def confirm_no(callback: types.CallbackQuery, state: FSMContext):
+    await state.clear()
+    await callback.message.edit_text("❌ Создание отменено.", reply_markup=back_to_main_kb())
+    await callback.answer()
