@@ -1,10 +1,12 @@
+import logging
+
 from aiogram.dispatcher import router
 from aiogram.filters import StateFilter, Command
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.fsm.context import FSMContext
 from aiogram.types import ReplyKeyboardMarkup, Message, KeyboardButton
 from aiogram import F, Router
-from config import cur, bd_conn
+from config import bd_conn
 
 
 
@@ -12,6 +14,7 @@ class CreateUser(StatesGroup):
     ChoosingName = State()
     ChoosingId = State()
     ChoosingRole = State()
+    Confirm = State()
 
 
 router = Router()
@@ -42,13 +45,21 @@ async def ChoosingRole(message: Message, state: FSMContext) -> None:
     await state.update_data(ChoosingRole=message.text)
     user_data = await state.get_data()
     await message.answer(f"Подтвердите указанные данные: {user_data["ChoosingId"]}, {user_data["ChoosingName"]}, {user_data["ChoosingRole"]}")
+    await state.set_state(CreateUser.Confirm)
 
 
-@router.message(CreateUser.ChoosingRole, F.text.in_(confirm))
+@router.message(CreateUser.Confirm)
 async def cmd_confirm(message: Message, state: FSMContext) -> None:
+    cur = bd_conn.cursor()
     user_data = await state.get_data()
-    print(user_data)
-    text = f'INSERT INTO Users (id, name, role) VALUES ({user_data["ChoosingId"]}, {user_data["ChoosingName"]}, {user_data["ChoosingRole"]})'
-    cur.execute(text)
-    bd_conn.commit()
-    await message.answer("Пользователь добавлен")
+    if message.text.lower() == 'да':
+        print(user_data)
+        text = f'INSERT INTO Users (telegram_tag, full_name, role, status) VALUES (%s, %s, %s, %s)'
+        cur.execute(text, (user_data["ChoosingId"], user_data["ChoosingName"], user_data["ChoosingRole"], 'available'))
+        logging.info('Created '+text)
+        bd_conn.commit()
+        logging.info('Commit created')
+        await message.answer("Пользователь добавлен")
+    else:
+        await state.clear()
+        await message.answer("Отменено")
