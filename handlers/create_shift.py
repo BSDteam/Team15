@@ -8,7 +8,7 @@ from aiogram.types import ReplyKeyboardMarkup, Message, KeyboardButton
 from aiogram import F, Router
 from config import bd_conn
 from datetime import datetime, timedelta
-
+from inline_kbds import cancel_new_shift, confirm
 
 class CreateUser(StatesGroup):
     ChoosingWorkshop = State()
@@ -31,7 +31,7 @@ async def cmdCreateShift(message: Message, state: FSMContext) -> None:
     for i in workshops:
         text += ' '
         text += str(i[0])
-    await message.answer(f"Доступные цеха:{text}, выберите доступный")
+    await message.answer(f"Доступные цеха:{text}, выберите доступный", reply_markup=cancel_new_shift)
     await state.set_state(CreateUser.ChoosingWorkshop)
 
 
@@ -76,11 +76,11 @@ async def ChoosingDate(message: Message, state: FSMContext) -> None:
 async def ChoosingTime(message: Message, state: FSMContext) -> None:
     await state.update_data(ChoosingTime=message.text)
     user_data = await state.get_data()
-    await message.answer(f"Подтвердите указанные данные: {user_data['ChoosingWorkshop']}, {user_data['ChoosingDate']}, {user_data['ChoosingTime']}")
+    await message.answer(f"Подтвердите указанные данные: {user_data['ChoosingWorkshop']}, {user_data['ChoosingDate']}, {user_data['ChoosingTime']}", reply_markup=confirm)
     await state.set_state(CreateUser.ConfirmShift)
 
 
-@router.message(CreateUser.ConfirmShift)
+@router.message(CreateUser.ConfirmShift, F.data == 'confirm_yes')
 async def cmdConfirm(message: Message, state: FSMContext) -> None:
     cur = bd_conn.cursor()
     user_data = await state.get_data()
