@@ -3,16 +3,10 @@ import logging
 from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
-from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery, Message
 
 from config import bd_conn
-from inline_kbds import vacations_list
-from utils.db_utils import (
-    fetch_user_by_tag,
-    fetch_leaves_by_tag,
-    create_leave_record,
-    cancel_leave_record
-)
+from inline_kbds import vacations_list, vacations_list_go_back
 
 router = Router()
 
@@ -25,24 +19,32 @@ class LeaveManagement(StatesGroup):
 
 # Функция
 def get_main_keyboard():
-    return ReplyKeyboardMarkup(
-        keyboard=[
-            [KeyboardButton(text="Назначить отпуск")],
-            [KeyboardButton(text="Отменить отпуск")],
-            [KeyboardButton(text="Вернуться")]
-        ],
+    return InlineKeyboardMarkup(
+        keyboard=vacations_list,
         resize_keyboard=True
     )
 
 def get_cancel_keyboard():
-    return ReplyKeyboardMarkup(
-        keyboard=[[KeyboardButton(text="Вернуться")]],
+    return InlineKeyboardMarkup(
+        keyboard=vacations_list_go_back,
         resize_keyboard=True
     )
 
-@router.message(F.text == "/manage_leaves")
-async def start_leave_management(message: Message, state: FSMContext):
-    await message.answer("Введите @tag сотрудника (например, @ivan):")
+@router.callback_query(F.data == "main_create_vacation")
+async def start_leave_management_from_menu(callback: CallbackQuery, state: FSMContext):
+    # Проверяем, что пользователь — начальник
+    cur = bd_conn.cursor()
+    tag = "@" + callback.from_user.username
+    cur.execute("SELECT role FROM users WHERE telegram_tag = %s", (tag,))
+    user = cur.fetchone()
+    cur.close()
+
+    if not user or user[0] != "supervisor":
+        await callback.answer("❌ У вас нет прав на управление отпусками.", show_alert=True)
+        return
+
+    await callback.answer()
+    await callback.message.answer("Введите @tag сотрудника (например, @ivan):")
     await state.set_state(LeaveManagement.WaitingForTag)
 
 @router.message(LeaveManagement.WaitingForTag)
