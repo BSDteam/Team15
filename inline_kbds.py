@@ -45,6 +45,11 @@ shifts_list = [
     [InlineKeyboardButton(text="Подробная информация по смене", callback_data='get_shift_details')]
 ]
 
+shifts_list_employee = [
+    [InlineKeyboardButton(text="На Главную", callback_data='main_refresh')],
+    [InlineKeyboardButton(text="Подробная информация по смене", callback_data='get_shift_details')]
+]
+
 # 4 Информация по смене
 shift_details = [
     [InlineKeyboardButton(text="Добавить Сотрудника", callback_data='pick_employee_to_shift')],
